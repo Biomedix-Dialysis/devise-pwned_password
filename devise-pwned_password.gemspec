@@ -7,7 +7,7 @@ require "devise/pwned_password/version"
 
 # Describe your gem and declare its dependencies:
 Gem::Specification.new do |s|
-  s.name        = "devise-pwned_password"
+  s.name        = "devise-not_pwned"
   s.version     = Devise::PwnedPassword::VERSION
   s.authors     = ["Michael Banfield"]
   s.email       = ["michael@michaelbanfield.com"]
