@@ -30,4 +30,8 @@
 # available at http://guides.rubyonrails.org/i18n.html.
 
 en:
-  hello: "Hello world"
+  errors:
+    messages:
+      not_pwned:
+        one:   "has appeared in a data breach"
+        other: "has appeared in a data breach %{count} times"
