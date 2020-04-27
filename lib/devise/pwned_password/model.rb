@@ -13,16 +13,24 @@ module Devise
     module PwnedPassword
       extend ActiveSupport::Concern
 
-      included do
-        validate :not_pwned_password, if: :password_required?
-      end
-
       module ClassMethods
         Devise::Models.config(self, :min_password_matches)
         Devise::Models.config(self, :min_password_matches_warn)
         Devise::Models.config(self, :pwned_password_check_on_sign_in)
         Devise::Models.config(self, :pwned_password_open_timeout)
         Devise::Models.config(self, :pwned_password_read_timeout)
+      end
+
+      included do
+        validates :password, not_pwned: {
+          threshold: min_password_matches,
+          request_options: {
+            open_timeout: pwned_password_open_timeout,
+            read_timeout: pwned_password_read_timeout,
+            headers: { "User-Agent" => "devise_pwned_password" }
+          }
+        }
+        validate :not_pwned_password_warn
       end
 
       def pwned?
@@ -32,38 +40,20 @@ module Devise
       def pwned_count
         @pwned_count ||= 0
       end
+      attr_writer :pwned_count
 
       # Returns true if password is present in the PwnedPasswords dataset
       def password_pwned?(password)
-        @pwned = false
-        @pwned_count = 0
-
-        options = {
-          headers: { "User-Agent" => "devise_pwned_password" },
-          read_timeout: self.class.pwned_password_read_timeout,
-          open_timeout: self.class.pwned_password_open_timeout
-        }
-        pwned_password = Pwned::Password.new(password.to_s, options)
-        begin
-          @pwned_count = pwned_password.pwned_count
-          @pwned = @pwned_count >= (
-            if persisted?
-              self.class.min_password_matches_warn || self.class.min_password_matches
-            else
-                                                      self.class.min_password_matches
-            end
-          )
+puts %(pwned_count=#{(pwned_count).inspect})
+puts %(persisted?=#{(persisted?).inspect})
+          puts %(self.class.min_password_matches_warn=#{(self.class.min_password_matches_warn).inspect})
+          @pwned = @pwned_count >= (persisted? ? self.class.min_password_matches_warn || self.class.min_password_matches : self.class.min_password_matches)
           return @pwned
-        rescue Pwned::Error
-          return false
-        end
-
-        false
       end
 
       private
 
-        def not_pwned_password
+        def not_pwned_password_warn
           # This deliberately fails silently on 500's etc. Most apps won't want to tie the ability to sign up users to the availability of a third-party API.
           if password_pwned?(password)
             errors.add(:password, :pwned_password, count: @pwned_count)
