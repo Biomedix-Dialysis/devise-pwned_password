@@ -19,6 +19,7 @@ module Devise
       end
 
       module ClassMethods
+        Devise::Models.config(self, :pwned_password_check_enabled)
         Devise::Models.config(self, :min_password_matches)
         Devise::Models.config(self, :min_password_matches_warn)
         Devise::Models.config(self, :pwned_password_check_on_sign_in)
@@ -27,7 +28,7 @@ module Devise
       end
 
       def check_pwned_password?
-        Devise.pwned_password_check_enabled &&
+        self.class.pwned_password_check_enabled &&
           (Devise.activerecord51? ? :will_save_change_to_encrypted_password? : :encrypted_password_changed?)
       end
 
@@ -48,8 +49,14 @@ module Devise
           open_timeout: self.class.pwned_password_open_timeout
         }
         pwned_password = Pwned::Password.new(password.to_s, options)
+
+        # If you do have a different warning threshold, that threshold will also be used
+        # when a user changes their password so that they don't continue to be warned if they
+        # choose another password that is in the pwned list but occurs with a frequency below
+        # the main threshold that is used for *new* user registrations.
         threshold = (self.class.min_password_matches_warn if persisted?) ||
           self.class.min_password_matches
+
         @pwned_count = pwned_password.pwned_count
         @pwned = @pwned_count >= threshold
         pwned_after_password_attempt if respond_to?(:pwned_after_password_attempt)

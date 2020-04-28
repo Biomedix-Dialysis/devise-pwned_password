@@ -7,6 +7,7 @@ ActiveRecord::Migrator.migrations_paths = [File.expand_path("../../test/dummy/db
 require "rails/test_help"
 
 require 'minitest/mock'
+require 'capybara/dsl'
 
 require 'devise/pwned_password/test_helpers'
 
@@ -23,3 +24,16 @@ if ActiveSupport::TestCase.respond_to?(:fixture_path=)
   ActiveSupport::TestCase.file_fixture_path = ActiveSupport::TestCase.fixture_path + "/files"
   ActiveSupport::TestCase.fixtures :all
 end
+
+class ActiveSupport::TestCase
+  include ::Devise::PwnedPassword::TestHelpers::InstanceMethods
+
+  def setup
+    super
+    Devise.pwned_password_check_enabled = true
+    User.min_password_matches = 1
+    User.min_password_matches_warn = nil
+  end
+end
+
+Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |f| require f }
