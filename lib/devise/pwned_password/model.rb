@@ -33,7 +33,7 @@ module Devise
       end
 
       def pwned?
-        @pwned ||= false
+        pwned_count >= pwned_password_min_matches
       end
 
       def pwned_count
@@ -50,17 +50,9 @@ module Devise
         }
         pwned_password = Pwned::Password.new(password.to_s, options)
 
-        # If you do have a different warning threshold, that threshold will also be used
-        # when a user changes their password so that they don't continue to be warned if they
-        # choose another password that is in the pwned list but occurs with a frequency below
-        # the main threshold that is used for *new* user registrations.
-        threshold = (self.class.min_password_matches_warn if persisted?) ||
-          self.class.min_password_matches
-
         @pwned_count = pwned_password.pwned_count
-        @pwned = @pwned_count >= threshold
         pwned_after_password_attempt if respond_to?(:pwned_after_password_attempt)
-        @pwned
+        pwned?
       rescue Pwned::Error => e # NOTE Pwned::TimeoutError < Pwned::Error
         # This deliberately silently swallows errors and returns false (valid) if there was an error. Most apps won't want to tie the ability to sign up users to the availability of a third-party API.
         pwned_after_error(e) if respond_to?(:pwned_after_error)
@@ -70,8 +62,16 @@ module Devise
       private
 
         def reset_pwned
-          @pwned = false
           @pwned_count = 0
+        end
+
+        def pwned_password_min_matches
+          # If you do have a different warning threshold, that threshold will also be used
+          # when a user changes their password so that they don't continue to be warned if they
+          # choose another password that is in the pwned list but occurs with a frequency below
+          # the main threshold that is used for *new* user registrations.
+          (self.class.min_password_matches_warn if persisted?) ||
+            self.class.min_password_matches
         end
 
         def not_pwned_password

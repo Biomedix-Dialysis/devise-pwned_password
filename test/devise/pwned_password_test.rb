@@ -18,6 +18,17 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
       assert user.pwned_count > 0
     end
 
+    test "when pwned_count = min_password_matches, is considered invalid" do
+      user = pwned_password_user
+      pwned_password = Minitest::Mock.new
+      pwned_password.expect :pwned_count, 1
+      User.min_password_matches = 1
+      Pwned::Password.stub :new, pwned_password do
+        assert_not user.valid?
+      end
+      pwned_password.verify
+    end
+
     test "when pwned_password_check_enabled = false, is considered valid" do
       user = pwned_password_user
       Devise.pwned_password_check_enabled = false
@@ -25,7 +36,7 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
       assert_equal 0, user.pwned_count
     end
 
-    test "when using with_pwned_password_check, is considered valid" do
+    test "when using with_pwned_password_check, enables the check, is considered invalid" do
       user = pwned_password_user
       Devise.pwned_password_check_enabled = false
       assert user.valid?
