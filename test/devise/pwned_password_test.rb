@@ -53,11 +53,16 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
     test "pwned_after_password_attempt should be called after any password attempts" do
       user = pwned_password_user
       was_called = false
+      callback_args = nil
       user.singleton_class.class_eval do
-        define_method(:pwned_after_password_attempt) { was_called = true }
+        define_method(:pwned_after_password_attempt) { |*args|
+          was_called = true
+          callback_args = args
+        }
       end
       user.save
       assert was_called
+      assert_equal [pwned_password], callback_args
     end
   end
 
@@ -91,8 +96,12 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
       user = valid_password_user
       was_called = false
       user.singleton_class.class_eval do
-        define_method(:pwned_after_password_attempt) { raise Pwned::TimeoutError, "some timeout error" }
-        define_method(:pwned_after_error) { |e| was_called = e.is_a?(Pwned::Error) }
+        define_method(:pwned_after_password_attempt) { |*|
+          raise Pwned::TimeoutError, "some timeout error"
+        }
+        define_method(:pwned_after_error) { |e|
+          was_called = e.is_a?(Pwned::Error)
+        }
       end
       user.save
       assert was_called

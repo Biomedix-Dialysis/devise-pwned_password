@@ -51,7 +51,7 @@ module Devise
         pwned_password = Pwned::Password.new(password.to_s, options)
 
         @pwned_count = pwned_password.pwned_count
-        pwned_after_password_attempt if respond_to?(:pwned_after_password_attempt)
+        pwned_after_password_attempt(password) if respond_to?(:pwned_after_password_attempt)
         pwned?
       rescue Pwned::Error => e # NOTE Pwned::TimeoutError < Pwned::Error
         # This deliberately silently swallows errors and returns false (valid) if there was an error. Most apps won't want to tie the ability to sign up users to the availability of a third-party API.
