@@ -7,8 +7,6 @@ Checks for compromised ("pwned") passwords in 2 different places/ways:
    - prevents existing users from changing their password to a password that is known to be compromised
 2. (Optionally) Whenever a user signs in, checks if their current password is compromised and shows a warning if it is.
 
-Based on [devise-uncommon_password](https://github.com/HCLarsen/devise-uncommon_password).
-
 Recently the HaveIBeenPwned API has moved to an [authenticated/paid model](https://www.troyhunt.com/authentication-and-the-have-i-been-pwned-api/), but this does not affect the PwnedPasswords API; no payment or authentication is required.
 
 
@@ -209,6 +207,10 @@ To contribute:
 * Make your changes
 * Run `bin/test` to make sure the unit tests still run
 * Send a pull request
+
+## Inspiration
+
+This gem was based on [devise-uncommon_password](https://github.com/HCLarsen/devise-uncommon_password).
 
 ## License
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
