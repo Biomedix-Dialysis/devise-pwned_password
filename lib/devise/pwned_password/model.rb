@@ -48,20 +48,15 @@ module Devise
           open_timeout: self.class.pwned_password_open_timeout
         }
         pwned_password = Pwned::Password.new(password.to_s, options)
-        begin
-          @pwned_count = pwned_password.pwned_count
-          @pwned = @pwned_count >= (
-            if persisted?
-              self.class.min_password_matches_warn || self.class.min_password_matches
-            else
-                                                      self.class.min_password_matches
-            end
-          )
-          return @pwned
-        rescue Pwned::Error
-          return false
-        end
-
+        threshold = (self.class.min_password_matches_warn if persisted?) ||
+          self.class.min_password_matches
+        @pwned_count = pwned_password.pwned_count
+        @pwned = @pwned_count >= threshold
+        pwned_after_password_attempt if respond_to?(:pwned_after_password_attempt)
+        @pwned
+      rescue Pwned::Error => e # NOTE Pwned::TimeoutError < Pwned::Error
+        # This deliberately silently swallows errors and returns false (valid) if there was an error. Most apps won't want to tie the ability to sign up users to the availability of a third-party API.
+        pwned_after_error(e) if respond_to?(:pwned_after_error)
         false
       end
 
@@ -73,7 +68,6 @@ module Devise
         end
 
         def not_pwned_password
-          # This deliberately fails silently on 500's etc. Most apps won't want to tie the ability to sign up users to the availability of a third-party API.
           if password_pwned?(password)
             errors.add(:password, :pwned_password, count: @pwned_count)
           end

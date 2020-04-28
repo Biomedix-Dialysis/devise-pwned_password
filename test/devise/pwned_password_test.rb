@@ -46,6 +46,16 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
         end
       end
     end
+
+    test "pwned_after_password_attempt should be called after any password attempts" do
+      user = pwned_password_user
+      was_called = false
+      user.singleton_class.class_eval do
+        define_method(:pwned_after_password_attempt) { was_called = true }
+      end
+      user.save
+      assert was_called
+    end
   end
 
   class WhenNotPwned < Devise::PwnedPassword::Test
@@ -70,6 +80,19 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
       User.min_password_matches      = 999_999_999
       assert_not user.valid?
       assert user.pwned_count > User.min_password_matches_warn
+    end
+  end
+
+  class WhenError < Devise::PwnedPassword::Test
+    test "pwned_after_error should be called after any pwned errors during operation" do
+      user = valid_password_user
+      was_called = false
+      user.singleton_class.class_eval do
+        define_method(:pwned_after_password_attempt) { raise Pwned::TimeoutError, "some timeout error" }
+        define_method(:pwned_after_error) { |e| was_called = e.is_a?(Pwned::Error) }
+      end
+      user.save
+      assert was_called
     end
   end
 
