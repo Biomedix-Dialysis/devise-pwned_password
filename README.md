@@ -76,7 +76,9 @@ To enable this, you _must_ override `after_sign_in_path_for`, like this:
 # app/controllers/application_controller.rb
 
   def after_sign_in_path_for(resource)
-    set_flash_message! :alert, :warn_pwned if resource.respond_to?(:pwned?) && resource.pwned?
+    if resource.respond_to?(:pwned?) && resource.pwned?
+      set_flash_message! :alert, :warn_pwned, {count: resource.pwned_count, user_id: resource.id}
+    end
     super
   end
 ```
@@ -87,7 +89,9 @@ For an [Active Admin](https://github.com/activeadmin/activeadmin) application th
 # config/initializers/active_admin_devise_sessions_controller.rb
 class ActiveAdmin::Devise::SessionsController
   def after_sign_in_path_for(resource)
-    set_flash_message! :alert, :warn_pwned if resource.respond_to?(:pwned?) && resource.pwned?
+    if resource.respond_to?(:pwned?) && resource.pwned?
+      set_flash_message! :alert, :warn_pwned, {count: resource.pwned_count, user_id: resource.id}
+    end
     super
   end
 end
