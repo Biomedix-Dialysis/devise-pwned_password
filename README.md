@@ -1,8 +1,13 @@
 # Devise::PwnedPassword
 Devise extension that checks user passwords against the PwnedPasswords dataset (https://haveibeenpwned.com/Passwords).
 
-Checks for compromised ("pwned") passwords in 2 different places/ways:
-1. As a standard model validation using [pwned](https://github.com/philnash/pwned). This:
+This handles the 3 use cases listed in [Troy Hunt's article](https://www.troyhunt.com/introducing-306-million-freely-downloadable-pwned-passwords/):
+1. Registration/sign-up
+2. Password change
+3. User log-in (optional)
+
+It checks for compromised ("pwned") passwords in the following ways:
+1. It adds a standard model validation to your Devise (`User`) model using [pwned](https://github.com/philnash/pwned). This:
    - prevents new users from being created (signing up) with a compromised password
    - prevents existing users from changing their password to a password that is known to be compromised
 2. (Optionally) Whenever a user signs in, checks if their current password is compromised and shows a warning if it is.
@@ -112,6 +117,31 @@ en:
     sessions:
       warn_pwned: "Your password has previously appeared in a data breach and should never be used. We strongly recommend you change your password everywhere you have used it."
 ```
+
+https://www.troyhunt.com/introducing-306-million-freely-downloadable-pwned-passwords/ offers some
+good advice for how to implement the user interface in a way that both follows the NIST's guidelines
+and provides a good user experience.
+
+If you want to copy the message recommended in that article, here is a template you can use:
+
+```yml
+# config/locales/devise.en.yml
+en:
+  devise:
+    sessions:
+      warn_pwned:
+        The password you're using on this site has previously appeared in a data breach of another site. <b>This is not related to a security incident on this site</b>; however, the fact that it has previously appeared elsewhere puts this account at risk. You should change your password here on the <a href="/users/%{user_id}/edit">change password</a> page as well as on any other site where you've used it. <a href="/pages/how-to-protect-your-account" target="_blank">Read more about how we help protect your account.</a>
+```
+
+Keep in mind, though, that including hyperlinks in a validation error message or flash message does
+not work out of the box because Rails will escape any HTML by default, so you may have to to work
+around this by calling `.html_safe` on the error message in any view templates where you display it
+to the user.  Just keep in mind that blindly calling `.html_safe` is unsafe; if any of the message
+could come from arbitrary user input, you must take appropriate steps to escape it and prevent [HTML
+injection](https://guides.rubyonrails.org/security.html#html-javascript-injection). (See also [these
+tips about using
+`.html_safe`](https://makandracards.com/makandra/2579-everything-you-know-about-html_safe-is-wrong).)
+
 
 #### Customize the warning threshold
 
