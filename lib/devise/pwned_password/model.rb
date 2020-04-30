@@ -25,6 +25,11 @@ module Devise
         Devise::Models.config(self, :pwned_password_check_on_sign_in)
         Devise::Models.config(self, :pwned_password_open_timeout)
         Devise::Models.config(self, :pwned_password_read_timeout)
+
+        def pwned_password_check_on_sign_in?
+          pwned_password_check_enabled &&
+          pwned_password_check_on_sign_in
+        end
       end
 
       def check_pwned_password?
