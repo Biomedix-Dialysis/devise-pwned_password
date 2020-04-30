@@ -76,7 +76,7 @@ module Devise
 
         def not_pwned_password
           if password_pwned?(password)
-            errors.add(:password, :pwned_password, count: @pwned_count)
+            errors.add :password, :pwned_password, {count: @pwned_count, user_id: id}
           end
         end
     end
