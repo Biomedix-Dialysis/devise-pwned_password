@@ -14,7 +14,10 @@ module Devise
       extend ActiveSupport::Concern
 
       included do
+        # Reset so that @pwned_count always reflects the last result of calling valid?. It shouldn't
+        # be possible to successfully save but have @pwned_count > 0.
         before_validation :reset_pwned
+
         validate :not_pwned_password, if: :check_pwned_password?
       end
 
@@ -34,7 +37,7 @@ module Devise
 
       def check_pwned_password?
         self.class.pwned_password_check_enabled &&
-          (Devise.activerecord51? ? :will_save_change_to_encrypted_password? : :encrypted_password_changed?)
+          (Devise.activerecord51? ? will_save_change_to_encrypted_password? : encrypted_password_changed?)
       end
 
       def pwned?

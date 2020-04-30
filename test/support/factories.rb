@@ -1,17 +1,21 @@
 module Factories
   def create_user(password:)
-    user = User.create(email: "example@example.org", password: password, password_confirmation: password)
-    user.save(validate: false)
-    user
+    User.create(email: "example@example.org", password: password, password_confirmation: password)
   end
 
   def pwned_password
     'password'
   end
 
+  # Tries to create but fails to save due to pwned_password
   def pwned_password_user
-    user = create_user(password: pwned_password)
-    #puts %(user.errors.messages=#{(user.errors.messages).inspect})
+    create_user(password: pwned_password)
+  end
+
+  # Simulates having a password that was previously valid but is now compromised
+  def pwned_password_user!
+    user = pwned_password_user
+    user.save(validate: false)
     user
   end
 

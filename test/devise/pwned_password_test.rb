@@ -29,7 +29,29 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
       pwned_password.verify
     end
 
-    test "when pwned_password_check_enabled = false, is considered valid" do
+    test "when updated and password is changed, is considered invalid" do
+      user = pwned_password_user!
+      user.password = pwned_password
+      assert user.check_pwned_password?
+      assert_not user.save
+      assert user.pwned_count > 0
+    end
+
+    test "when updated but password not changed, the check is skipped" do
+      user = pwned_password_user!
+      user.email = 'new@email.com'
+      assert_not user.check_pwned_password?
+      assert user.save
+      assert_equal 0, user.pwned_count
+
+      user.singleton_class.class_eval do
+        define_method(:check_pwned_password?) { true }
+      end
+      assert_not user.valid?
+      assert user.pwned_count > 0
+    end
+
+    test "when pwned_password_check_enabled = false, the check is skipped" do
       user = pwned_password_user
       Devise.pwned_password_check_enabled = false
       assert user.valid?
@@ -72,15 +94,17 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
       user = valid_password_user
 
       # *not* pwned_count > min_password_matches_warn
-      password = "password"
-      user.update password: password, password_confirmation: password
       User.min_password_matches_warn = 999_999_999
-      assert user.valid?
+      password = "password"
+      saved = user.update password: password, password_confirmation: password
+      assert saved
       assert_not user.pwned_count > User.min_password_matches_warn
 
       # pwned_count > min_password_matches_warn
       User.min_password_matches_warn = 1
       User.min_password_matches      = 999_999_999
+      password = "password"
+      saved = user.update password: password, password_confirmation: password
       assert_not user.valid?
       assert user.pwned_count > User.min_password_matches_warn
     end
@@ -88,7 +112,7 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
 
   class WhenError < Devise::PwnedPassword::Test
     test "pwned_after_error should be called after any pwned errors during operation" do
-      user = valid_password_user
+      user = pwned_password_user
       was_called = false
       user.singleton_class.class_eval do
         define_method(:pwned_after_password_attempt) { raise Pwned::TimeoutError, "some timeout error" }

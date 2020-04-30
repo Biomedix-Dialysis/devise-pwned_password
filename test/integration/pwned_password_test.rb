@@ -26,7 +26,7 @@ class SignInTest < ActionDispatch::IntegrationTest
   end
 
   test 'signing in with a pwned password' do
-    user = pwned_password_user
+    user = pwned_password_user!
     sign_in_user user, password: pwned_password
 
     # Shows warning but doesn't prevent them from signing in
